@@ -1,5 +1,5 @@
 # Compiler
-CC := clang
+CC := cc
 
 # Compiler flags
 CCFLAGS := -std=c17 -Wall -Wextra -pedantic
