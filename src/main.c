@@ -34,7 +34,7 @@ int main()
 
     struct stack_node *top = NULL;
     
-    const int THREAD_COUNT = 5;
+    const int THREAD_COUNT = 5000;
 
     pthread_t thread_list[THREAD_COUNT];
 
