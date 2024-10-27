@@ -5,8 +5,6 @@
 #include <stack>
 #include <vector>
 
-#define NUM_PUSHES 3
-#define NUM_POPS 3
 
 /// pthread RAII wrapper class
 class Thread {
@@ -51,12 +49,16 @@ public:
   void unlock() { pthread_mutex_unlock(&mutex); }
 
   ~Mutex() { pthread_mutex_destroy(&mutex); }
+
+  // Prevent copying
+  Mutex(const Mutex&) = delete;
+  Mutex& operator=(const Mutex&) = delete;
 };
 
 /// Mutex lock RAII class
 class MutexLock {
 private:
-  Mutex mutex;
+  Mutex& mutex;
 
 public:
   MutexLock(Mutex &m) : mutex(m) { mutex.lock(); }
@@ -67,28 +69,45 @@ public:
 template <typename T> class ThreadSafeStack {
 private:
   std::stack<T> stack;
-  Mutex mutex;
+  mutable Mutex mutex;
 
 public:
-  ThreadSafeStack() { stack = {}; }
+  ThreadSafeStack() = default;
 
   void push(T value) {
+    std::cout << std::format("Pushing {}\n", value);
     MutexLock lock(mutex);
     stack.push(value);
   }
 
-  T pop() {
+  void pop() {
+    if (empty()) {
+      std::cout << "Nothing to pop.\n";
+    } else {
+      T top;
+      {
+        MutexLock lock(mutex);
+        top = stack.top();
+        stack.pop();
+      }
+      std::cout << std::format("Popped {}\n", top);
+    }
+  }
+
+  bool empty() const {
     MutexLock lock(mutex);
-    T ret_value = stack.top();
-    stack.pop();
-    return ret_value;
+    return stack.empty();
   }
 };
+
+#define NUM_PUSHES 3
+#define NUM_POPS 3
+#define NUM_ITERS 500
 
 template <typename T> void *test_stack(void *arg) {
   auto *stack = static_cast<ThreadSafeStack<T> *>(arg); // I love polymorphism
 
-  for (int i = 0; i < 500; ++i) {
+  for (int i = 0; i < NUM_ITERS; ++i) {
     for (int i = 0; i < NUM_PUSHES; ++i) {
       std::srand(std::time(nullptr));
       stack->push(std::rand());
