@@ -2,7 +2,7 @@
 CC := cc
 
 # Compiler flags
-CCFLAGS := -std=c17 -Wall -Wextra -pedantic
+CCFLAGS := -std=c17 -Wall -Wextra -pedantic -pthread
 
 # Directories
 SRC_DIR := src
