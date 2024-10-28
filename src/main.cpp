@@ -5,7 +5,6 @@
 #include <stack>
 #include <vector>
 
-
 /// pthread RAII wrapper class
 class Thread {
 private:
@@ -51,14 +50,14 @@ public:
   ~Mutex() { pthread_mutex_destroy(&mutex); }
 
   // Prevent copying
-  Mutex(const Mutex&) = delete;
-  Mutex& operator=(const Mutex&) = delete;
+  Mutex(const Mutex &) = delete;
+  Mutex &operator=(const Mutex &) = delete;
 };
 
 /// Mutex lock RAII class
 class MutexLock {
 private:
-  Mutex& mutex;
+  Mutex &mutex;
 
 public:
   MutexLock(Mutex &m) : mutex(m) { mutex.lock(); }
@@ -75,23 +74,22 @@ public:
   ThreadSafeStack() = default;
 
   void push(T value) {
-    std::cout << std::format("Pushing {}\n", value);
     MutexLock lock(mutex);
     stack.push(value);
   }
 
-  void pop() {
-    if (empty()) {
-      std::cout << "Nothing to pop.\n";
-    } else {
-      T top;
+  T *pop() {
+    T *ret = nullptr;
+
+    if (!empty()) {
       {
         MutexLock lock(mutex);
-        top = stack.top();
+        ret = &stack.top();
         stack.pop();
       }
-      std::cout << std::format("Popped {}\n", top);
     }
+
+    return ret;
   }
 
   bool empty() const {
@@ -100,21 +98,31 @@ public:
   }
 };
 
-#define NUM_PUSHES 3
-#define NUM_POPS 3
-#define NUM_ITERS 500
+namespace test {
+  constexpr int NUM_PUSHES = 3;
+  constexpr int NUM_POPS = 3;
+  constexpr int NUM_ITERS = 500;
+  static unsigned long seed = 1;
+}
 
 template <typename T> void *test_stack(void *arg) {
   auto *stack = static_cast<ThreadSafeStack<T> *>(arg); // I love polymorphism
 
-  for (int i = 0; i < NUM_ITERS; ++i) {
-    for (int i = 0; i < NUM_PUSHES; ++i) {
-      std::srand(std::time(nullptr));
-      stack->push(std::rand());
+  for (int i = 0; i < test::NUM_ITERS; ++i) {
+    for (int i = 0; i < test::NUM_PUSHES; ++i) {
+      std::srand(test::seed++);
+      int value = std::rand();
+      stack->push(value);
+      std::cout << std::format("Pushed {}\n", value);
     }
 
-    for (int i = 0; i < NUM_POPS; ++i) {
-      stack->pop(); // don't actually care about return value
+    for (int i = 0; i < test::NUM_POPS; ++i) {
+      int* ret = stack->pop(); // don't actually care about return value
+      if (ret == nullptr) {
+        std::cout << "Stack empty, can't pop.\n";
+      } else {
+        std::cout << std::format("Popped {}\n", *ret);
+      }
     }
   }
   return nullptr;
@@ -139,4 +147,3 @@ int main() {
 
   return 0;
 }
-
