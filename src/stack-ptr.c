@@ -69,7 +69,7 @@ void* testStack(void* arg) {
 
 int main() { 
   pthread_t threads[NUM_THREADS]; // Array to hold threads 
-  pthread_mutex_init(&mtx, NULL); // Initialize the mutex
+  pthread_mutex_init(&mutex, NULL); // Initialize the mutex
 
   // Create 200 threads to perform testStack
   for (int i = 0; i < NUM_THREADS; i++) { 
