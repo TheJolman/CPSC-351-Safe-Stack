@@ -5,31 +5,28 @@
 #include "stack.h"
 #include <unistd.h>
 
-const int PUSH_MAX = 500;
-const int PUSH_MIN = 1;
+const int TEST_ITERATIONS = 1000;
 
-static int thread_num = 0;
 struct stack_node *top = NULL;
+
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void* stack_test(void* arg)
 {
-    printf("Thread Num: %d\n", thread_num++);
+    for (int i = 0; i < TEST_ITERATIONS; i++)
+    {   
+        pthread_mutex_lock(&mutex);
 
-    // struct stack_node* top = *(struct stack_node**)arg;
-    
-    for (int i = PUSH_MIN; i <= PUSH_MAX; i++)
-    {   
         push(&top, i);
-    }
-    
-    for (int i = PUSH_MAX; i >= PUSH_MIN; i--)
-    {   
         int value = pop(&top);
+
+        pthread_mutex_unlock(&mutex);
 
         if (i != value)
             printf("WARNING: Expected: %d, Received: %d\n", i, value);
     }
     
+
     pthread_exit(NULL);
 }
 
@@ -46,7 +43,7 @@ int main()
     }
 
     for (int i = 0; i < THREAD_COUNT; i++)
-    {
+    {  
         pthread_join(thread_list[i], NULL); 
     }
 
